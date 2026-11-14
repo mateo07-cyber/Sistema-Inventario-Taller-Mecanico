@@ -1,9 +1,8 @@
 ﻿
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using SistemaInventarioTallerMecanico.API.Data;
-using SistemaInventarioTallerMecanico.API.Models.Entities;
 using SistemaInventarioTallerMecanico.API.Models.Dtos;
+using SistemaInventarioTallerMecanico.Domain.Entities;
+using SistemaInventarioTallerMecanico.Domain.Repository;
 
 namespace SistemaInventarioTallerMecanico.API.Controllers
 {
@@ -11,35 +10,33 @@ namespace SistemaInventarioTallerMecanico.API.Controllers
     [ApiController]
     public class ProveedoresController : ControllerBase
     {
-        private readonly DataContext _context;
+        private readonly IProveedorRepository _proveedorRepository;
 
-        public ProveedoresController(DataContext context)
+        public ProveedoresController(IProveedorRepository proveedorRepository)
         {
-            _context = context;
+            _proveedorRepository = proveedorRepository;
         }
 
-        // Obtener todos los proveedores
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProveedorDto>>> GetProveedores()
         {
-            var proveedores = await _context.Proveedores
-                .Select(p => new ProveedorDto
-                {
-                    Id = p.Id,
-                    Nombre = p.Nombre,
-                    Telefono = p.Telefono,
-                    Correo = p.Correo
-                })
-                .ToListAsync();
+            var proveedores = await _proveedorRepository.ObtenerTodosAsync();
 
-            return Ok(proveedores);
+            var resultado = proveedores.Select(p => new ProveedorDto
+            {
+                Id = p.Id,
+                Nombre = p.Nombre,
+                Telefono = p.Telefono,
+                Correo = p.Correo
+            });
+
+            return Ok(resultado);
         }
 
-        // Obtener un proveedor por ID
         [HttpGet("{id}")]
         public async Task<ActionResult<ProveedorDto>> GetProveedor(int id)
         {
-            var proveedor = await _context.Proveedores.FindAsync(id);
+            var proveedor = await _proveedorRepository.ObtenerPorIdAsync(id);
 
             if (proveedor == null)
                 return NotFound();
@@ -53,7 +50,6 @@ namespace SistemaInventarioTallerMecanico.API.Controllers
             });
         }
 
-        // Crear un proveedor
         [HttpPost]
         public async Task<ActionResult<ProveedorDto>> CrearProveedor(ProveedorDto dto)
         {
@@ -64,19 +60,21 @@ namespace SistemaInventarioTallerMecanico.API.Controllers
                 Correo = dto.Correo
             };
 
-            _context.Proveedores.Add(proveedor);
-            await _context.SaveChangesAsync();
+            await _proveedorRepository.CrearAsync(proveedor);
 
             dto.Id = proveedor.Id;
 
-            return CreatedAtAction(nameof(GetProveedor), new { id = proveedor.Id }, dto);
+            return CreatedAtAction(
+                nameof(GetProveedor),
+                new { id = proveedor.Id },
+                dto);
         }
 
-        // Actualizar un proveedor
         [HttpPut("{id}")]
-        public async Task<IActionResult> ActualizarProveedor(int id, ProveedorDto dto)
+        public async Task<IActionResult> ActualizarProveedor(
+            int id, ProveedorDto dto)
         {
-            var proveedor = await _context.Proveedores.FindAsync(id);
+            var proveedor = await _proveedorRepository.ObtenerPorIdAsync(id);
 
             if (proveedor == null)
                 return NotFound();
@@ -85,22 +83,18 @@ namespace SistemaInventarioTallerMecanico.API.Controllers
             proveedor.Telefono = dto.Telefono;
             proveedor.Correo = dto.Correo;
 
-            await _context.SaveChangesAsync();
+            await _proveedorRepository.ActualizarAsync(proveedor);
 
             return NoContent();
         }
 
-        // Eliminar un proveedor
         [HttpDelete("{id}")]
         public async Task<IActionResult> EliminarProveedor(int id)
         {
-            var proveedor = await _context.Proveedores.FindAsync(id);
+            var eliminado = await _proveedorRepository.EliminarAsync(id);
 
-            if (proveedor == null)
+            if (!eliminado)
                 return NotFound();
-
-            _context.Proveedores.Remove(proveedor);
-            await _context.SaveChangesAsync();
 
             return NoContent();
         }

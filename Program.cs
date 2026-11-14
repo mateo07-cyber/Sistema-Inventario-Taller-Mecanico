@@ -1,6 +1,8 @@
 
 using Microsoft.EntityFrameworkCore;
-using SistemaInventarioTallerMecanico.API.Data;
+using SistemaInventarioTallerMecanico.Domain.Repository;
+using SistemaInventarioTallerMecanico.Infrastructure.Context;
+using SistemaInventarioTallerMecanico.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,9 +11,14 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddDbContext<DataContext>(options =>
+// Conexión con la base de datos
+builder.Services.AddDbContext<TallerMecanicoContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Registro de los repositorios
+builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
+builder.Services.AddScoped<IProveedorRepository, ProveedorRepository>();
 
 var app = builder.Build();
 
