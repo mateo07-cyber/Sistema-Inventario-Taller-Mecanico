@@ -1,8 +1,6 @@
-﻿
 using Microsoft.AspNetCore.Mvc;
-using SistemaInventarioTallerMecanico.API.Models.Dtos;
-using SistemaInventarioTallerMecanico.Domain.Entities;
-using SistemaInventarioTallerMecanico.Domain.Repository;
+using SistemaInventarioTallerMecanico.Application.Contract;
+using SistemaInventarioTallerMecanico.Application.Dtos.Proveedor;
 
 namespace SistemaInventarioTallerMecanico.API.Controllers
 {
@@ -10,93 +8,45 @@ namespace SistemaInventarioTallerMecanico.API.Controllers
     [ApiController]
     public class ProveedoresController : ControllerBase
     {
-        private readonly IProveedorRepository _proveedorRepository;
+        private readonly IProveedorService _proveedorService;
 
-        public ProveedoresController(IProveedorRepository proveedorRepository)
+        public ProveedoresController(IProveedorService proveedorService)
         {
-            _proveedorRepository = proveedorRepository;
+            _proveedorService = proveedorService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProveedorDto>>> GetProveedores()
         {
-            var proveedores = await _proveedorRepository.ObtenerTodosAsync();
-
-            var resultado = proveedores.Select(p => new ProveedorDto
-            {
-                Id = p.Id,
-                Nombre = p.Nombre,
-                Telefono = p.Telefono,
-                Correo = p.Correo
-            });
-
-            return Ok(resultado);
+            return Ok(await _proveedorService.ObtenerTodosAsync());
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ProveedorDto>> GetProveedor(int id)
         {
-            var proveedor = await _proveedorRepository.ObtenerPorIdAsync(id);
-
-            if (proveedor == null)
-                return NotFound();
-
-            return Ok(new ProveedorDto
-            {
-                Id = proveedor.Id,
-                Nombre = proveedor.Nombre,
-                Telefono = proveedor.Telefono,
-                Correo = proveedor.Correo
-            });
+            var proveedor = await _proveedorService.ObtenerPorIdAsync(id);
+            return proveedor is null ? NotFound() : Ok(proveedor);
         }
 
         [HttpPost]
         public async Task<ActionResult<ProveedorDto>> CrearProveedor(ProveedorDto dto)
         {
-            var proveedor = new Proveedor
-            {
-                Nombre = dto.Nombre,
-                Telefono = dto.Telefono,
-                Correo = dto.Correo
-            };
-
-            await _proveedorRepository.CrearAsync(proveedor);
-
-            dto.Id = proveedor.Id;
-
-            return CreatedAtAction(
-                nameof(GetProveedor),
-                new { id = proveedor.Id },
-                dto);
+            var creado = await _proveedorService.CrearAsync(dto);
+            return CreatedAtAction(nameof(GetProveedor), new { id = creado.Id }, creado);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> ActualizarProveedor(
-            int id, ProveedorDto dto)
+        public async Task<IActionResult> ActualizarProveedor(int id, ProveedorDto dto)
         {
-            var proveedor = await _proveedorRepository.ObtenerPorIdAsync(id);
-
-            if (proveedor == null)
-                return NotFound();
-
-            proveedor.Nombre = dto.Nombre;
-            proveedor.Telefono = dto.Telefono;
-            proveedor.Correo = dto.Correo;
-
-            await _proveedorRepository.ActualizarAsync(proveedor);
-
-            return NoContent();
+            var actualizado = await _proveedorService.ActualizarAsync(id, dto);
+            return actualizado ? NoContent() : NotFound();
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> EliminarProveedor(int id)
         {
-            var eliminado = await _proveedorRepository.EliminarAsync(id);
-
-            if (!eliminado)
-                return NotFound();
-
-            return NoContent();
+            var eliminado = await _proveedorService.EliminarAsync(id);
+            return eliminado ? NoContent() : NotFound();
         }
     }
 }
