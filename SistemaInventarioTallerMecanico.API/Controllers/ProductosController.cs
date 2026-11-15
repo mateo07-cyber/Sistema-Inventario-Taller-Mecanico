@@ -1,8 +1,6 @@
-﻿
 using Microsoft.AspNetCore.Mvc;
-using SistemaInventarioTallerMecanico.API.Models.Dtos;
-using SistemaInventarioTallerMecanico.Domain.Entities;
-using SistemaInventarioTallerMecanico.Domain.Repository;
+using SistemaInventarioTallerMecanico.Application.Contract;
+using SistemaInventarioTallerMecanico.Application.Dtos.Producto;
 
 namespace SistemaInventarioTallerMecanico.API.Controllers
 {
@@ -10,100 +8,42 @@ namespace SistemaInventarioTallerMecanico.API.Controllers
     [ApiController]
     public class ProductosController : ControllerBase
     {
-        private readonly IProductoRepository _productoRepository;
-        private readonly IProveedorRepository _proveedorRepository;
+        private readonly IProductoService _productoService;
 
-        public ProductosController(
-            IProductoRepository productoRepository,
-            IProveedorRepository proveedorRepository)
+        public ProductosController(IProductoService productoService)
         {
-            _productoRepository = productoRepository;
-            _proveedorRepository = proveedorRepository;
+            _productoService = productoService;
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<ProductoDto>>> GetProductos()
         {
-            var productos = await _productoRepository.ObtenerTodosAsync();
-
-            var resultado = productos.Select(p => new ProductoDto
-            {
-                Id = p.Id,
-                Nombre = p.Nombre,
-                Precio = p.Precio,
-                Cantidad = p.Cantidad,
-                ProveedorId = p.ProveedorId
-            });
-
-            return Ok(resultado);
+            return Ok(await _productoService.ObtenerTodosAsync());
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ProductoDto>> GetProducto(int id)
         {
-            var producto = await _productoRepository.ObtenerPorIdAsync(id);
-
-            if (producto == null)
-                return NotFound();
-
-            return Ok(new ProductoDto
-            {
-                Id = producto.Id,
-                Nombre = producto.Nombre,
-                Precio = producto.Precio,
-                Cantidad = producto.Cantidad,
-                ProveedorId = producto.ProveedorId
-            });
+            var producto = await _productoService.ObtenerPorIdAsync(id);
+            return producto is null ? NotFound() : Ok(producto);
         }
 
         [HttpPost]
         public async Task<ActionResult<ProductoDto>> CrearProducto(ProductoDto dto)
         {
-            var proveedor = await _proveedorRepository
-                .ObtenerPorIdAsync(dto.ProveedorId);
+            var creado = await _productoService.CrearAsync(dto);
+            if (creado is null)
+                return BadRequest("No se pudo crear el producto. Verifique que el proveedor exista y los datos sean válidos.");
 
-            if (proveedor == null)
-                return BadRequest("El proveedor indicado no existe.");
-
-            var producto = new Producto
-            {
-                Nombre = dto.Nombre,
-                Precio = dto.Precio,
-                Cantidad = dto.Cantidad,
-                ProveedorId = dto.ProveedorId
-            };
-
-            await _productoRepository.CrearAsync(producto);
-
-            dto.Id = producto.Id;
-
-            return CreatedAtAction(
-                nameof(GetProducto),
-                new { id = producto.Id },
-                dto);
+            return CreatedAtAction(nameof(GetProducto), new { id = creado.Id }, creado);
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> ActualizarProducto(
-            int id, ProductoDto dto)
+        public async Task<IActionResult> ActualizarProducto(int id, ProductoDto dto)
         {
-            var producto = await _productoRepository.ObtenerPorIdAsync(id);
-
-            if (producto == null)
-                return NotFound();
-
-            var proveedor = await _proveedorRepository
-                .ObtenerPorIdAsync(dto.ProveedorId);
-
-            if (proveedor == null)
-                return BadRequest("El proveedor indicado no existe.");
-
-            producto.Nombre = dto.Nombre;
-            producto.Precio = dto.Precio;
-            producto.Cantidad = dto.Cantidad;
-            producto.ProveedorId = dto.ProveedorId;
-
-            await _productoRepository.ActualizarAsync(producto);
+            var actualizado = await _productoService.ActualizarAsync(id, dto);
+            if (!actualizado)
+                return BadRequest("No se pudo actualizar el producto. Verifique el ID, el proveedor y los datos enviados.");
 
             return NoContent();
         }
@@ -111,12 +51,8 @@ namespace SistemaInventarioTallerMecanico.API.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> EliminarProducto(int id)
         {
-            var eliminado = await _productoRepository.EliminarAsync(id);
-
-            if (!eliminado)
-                return NotFound();
-
-            return NoContent();
+            var eliminado = await _productoService.EliminarAsync(id);
+            return eliminado ? NoContent() : NotFound();
         }
     }
 }
