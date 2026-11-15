@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="SistemaInventarioTallerMecanico.API/SistemaInventarioTallerMecanico.API.csproj" />
+  <Project Path="SistemaInventarioTallerMecanico.Domain/SistemaInventarioTallerMecanico.Domain.csproj" Id="c9171981-5b45-4540-9821-44d2f28e081e" />
+  <Project Path="SistemaInventarioTallerMecanico.Infrastructure/SistemaInventarioTallerMecanico.Infrastructure.csproj" Id="fac610f5-0589-41cb-9193-e95bd3d23715" />
+</Solution>
