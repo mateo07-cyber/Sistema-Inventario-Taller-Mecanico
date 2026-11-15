@@ -1,5 +1,7 @@
 
 using Microsoft.EntityFrameworkCore;
+using SistemaInventarioTallerMecanico.Application.Contract;
+using SistemaInventarioTallerMecanico.Application.Services;
 using SistemaInventarioTallerMecanico.Domain.Repository;
 using SistemaInventarioTallerMecanico.Infrastructure.Context;
 using SistemaInventarioTallerMecanico.Infrastructure.Repositories;
@@ -15,6 +17,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<TallerMecanicoContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Registro de los servicios de aplicación
+builder.Services.AddScoped<IProductoService, ProductoService>();
+builder.Services.AddScoped<IProveedorService, ProveedorService>();
 
 // Registro de los repositorios
 builder.Services.AddScoped<IProductoRepository, ProductoRepository>();
